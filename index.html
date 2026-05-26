@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>我们的小窝 💌</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --pink: #e8789a;
+      --pink-deep: #c45070;
+      --pink-light: #fff0f5;
+      --blush: #fff8fb;
+      --text: #3a2030;
+      --muted: #9a7088;
+      --border: rgba(196, 80, 112, 0.15);
+      --radius: 16px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      background: #fff5f9;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { display: flex; flex-direction: column; min-height: 100dvh; }
+
+    /* ── SETUP ── */
+    #setupScreen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      gap: 1.5rem;
+    }
+
+    .setup-logo { font-size: 56px; line-height: 1; }
+    .setup-title { font-family: 'Noto Serif SC', serif; font-size: 22px; color: var(--pink-deep); letter-spacing: 2px; }
+    .setup-sub { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.7; }
+
+    .setup-form {
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+
+    .setup-form input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      background: white;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .setup-form input:focus { border-color: var(--pink); }
+
+    .btn-main {
+      width: 100%;
+      padding: 13px;
+      background: var(--pink-deep);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.15s;
+    }
+    .btn-main:active { opacity: 0.8; }
+
+    .setup-tip {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* ── MAIN APP ── */
+    #appScreen { flex: 1; display: none; flex-direction: column; max-width: 480px; margin: 0 auto; width: 100%; }
+
+    .app-header {
+      background: white;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .app-header-title { font-family: 'Noto Serif SC', serif; font-size: 17px; color: var(--pink-deep); }
+    .app-header-user { font-size: 12px; color: var(--muted); }
+    .btn-logout { font-size: 12px; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-family: inherit; cursor: pointer; }
+
+    /* tabs */
+    .tabs {
+      background: white;
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 11px 4px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab.active { color: var(--pink-deep); border-bottom-color: var(--pink-deep); font-weight: 500; }
+
+    /* panels */
+    .panels { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .panel { display: none; padding: 14px 14px calc(14px + var(--safe-bottom)); }
+    .panel.active { display: block; }
+
+    /* cards */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--pink-deep);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* checkin status */
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .status-card {
+      background: #fff8fb;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .status-card.done { background: #fff0f5; border-color: var(--pink); }
+    .status-card .sname { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .status-card .semoji { font-size: 26px; line-height: 1; margin-bottom: 4px; }
+    .status-card .stime { font-size: 11px; color: var(--muted); }
+
+    /* mood */
+    .mood-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mood-btn {
+      width: 44px; height: 44px;
+      font-size: 22px;
+      background: #fff8fb;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .mood-btn.selected { border-color: var(--pink-deep); background: #ffe8f0; transform: scale(1.1); }
+
+    /* miss slider */
+    .miss-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    .miss-emoji { font-size: 26px; min-width: 32px; }
+    .miss-row input[type=range] {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: linear-gradient(to right, var(--pink-deep) 0%, var(--pink-deep) 50%, #e8d0d8 50%, #e8d0d8 100%);
+      border-radius: 4px;
+      outline: none;
+    }
+    .miss-row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--pink-deep);
+      border: 3px solid white;
+      box-shadow: 0 1px 4px rgba(196,80,112,0.3);
+    }
+    .miss-label { font-size: 12px; color: var(--muted); min-width: 60px; text-align: right; }
+
+    /* checkin buttons */
+    .checkin-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+    .btn-checkin {
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+    .btn-checkin:active { transform: scale(0.97); }
+    .btn-night { background: #3d2060; color: white; }
+    .btn-morning { background: white; color: var(--pink-deep); border: 1.5px solid var(--pink-deep) !important; border: none; }
+
+    /* history */
+    .history-item {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .history-emoji { font-size: 28px; }
+    .history-info { flex: 1; }
+    .history-who { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .history-main { font-size: 14px; }
+    .history-miss { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .history-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 8px;
+      background: #ffe8f0;
+      color: var(--pink-deep);
+      white-space: nowrap;
+    }
+
+    /* anniversaries */
+    .anniv-card-item {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .anniv-left .alabel { font-size: 14px; font-weight: 500; }
+    .anniv-left .adate { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .anniv-right { text-align: right; }
+    .anniv-days { font-family: 'Noto Serif SC', serif; font-size: 24px; font-weight: 600; color: var(--pink-deep); }
+    .anniv-unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .anniv-today { font-size: 18px; }
+
+    /* add anniv form */
+    .add-form { display: flex; flex-direction: column; gap: 10px; }
+    .add-form input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fff8fb;
+      color: var(--text);
+      outline: none;
+    }
+    .add-form input:focus { border-color: var(--pink); background: white; }
+    .btn-add {
+      padding: 10px;
+      background: var(--pink-deep);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-add:active { opacity: 0.8; }
+
+    .empty-tip { text-align: center; color: var(--muted); font-size: 13px; padding: 2.5rem 1rem; line-height: 1.8; }
+
+    /* toast */
+    .toast {
+      position: fixed;
+      bottom: calc(60px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(60, 20, 40, 0.88);
+      color: white;
+      border-radius: 20px;
+      padding: 9px 22px;
+      font-size: 13px;
+      font-family: inherit;
+      opacity: 0;
+      transition: all 0.25s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 9999;
+      backdrop-filter: blur(4px);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* delete btn */
+    .btn-del {
+      font-size: 11px;
+      color: #ccc;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 8px;
+    }
+    .btn-del:active { color: #e24b4a; }
+  </style>
+</head>
+<body>
+
+<!-- 设置页 -->
+<div id="setupScreen">
+  <div class="setup-logo">💌</div>
+  <div class="setup-title">我们的小窝</div>
+  <div class="setup-sub">你们专属的早晚安打卡空间<br>心情、想念、每一个纪念日</div>
+
+  <div class="setup-form">
+    <div>
+      <div class="field-label">你的昵称</div>
+      <input type="text" id="nameInput" placeholder="例如：宝贝、臭臭" maxlength="10" />
+    </div>
+    <div>
+      <div class="field-label">情侣专属码（两人填一样的）</div>
+      <input type="text" id="codeInput" placeholder="随便取，例如：xiaozhu520" maxlength="30" />
+    </div>
+    <button class="btn-main" onclick="doSetup()">进入我们的小窝 💕</button>
+  </div>
+
+  <div class="setup-tip">
+    情侣码相同的两个人，数据会自动同步 🔗<br>
+    不需要注册账号，完全免费
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="appScreen">
+  <div class="app-header">
+    <div class="app-header-title">💌 我们的小窝</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="app-header-user" id="headerUser"></span>
+      <button class="btn-logout" onclick="doLogout()">切换</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-checkin" onclick="switchTab('checkin')">🌙 打卡</div>
+    <div class="tab" id="tab-history" onclick="switchTab('history')">📖 记录</div>
+    <div class="tab" id="tab-anniv" onclick="switchTab('anniv')">🗓️ 纪念日</div>
+  </div>
+
+  <div class="panels">
+    <!-- 打卡 -->
+    <div class="panel active" id="panel-checkin">
+      <div class="status-grid">
+        <div class="status-card" id="myStatus">
+          <div class="sname" id="myStatusName">我</div>
+          <div class="semoji">🌙</div>
+          <div class="stime">未打卡</div>
+        </div>
+        <div class="status-card" id="partnerStatus">
+          <div class="sname">TA</div>
+          <div class="semoji">🌙</div>
+          <div class="stime">等待中…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌈 今天的心情</div>
+        <div class="mood-grid" id="moodGrid">
+          <button class="mood-btn selected" onclick="pickMood(this,'😊')">😊</button>
+          <button class="mood-btn" onclick="pickMood(this,'🥰')">🥰</button>
+          <button class="mood-btn" onclick="pickMood(this,'😌')">😌</button>
+          <button class="mood-btn" onclick="pickMood(this,'😴')">😴</button>
+          <button class="mood-btn" onclick="pickMood(this,'😭')">😭</button>
+          <button class="mood-btn" onclick="pickMood(this,'😤')">😤</button>
+          <button class="mood-btn" onclick="pickMood(this,'🤒')">🤒</button>
+          <button class="mood-btn" onclick="pickMood(this,'🥳')">🥳</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💭 对TA的想念</div>
+        <div class="miss-row">
+          <span class="miss-emoji" id="missEmoji">❤️</span>
+          <input type="range" min="1" max="5" value="3" id="missSlider" oninput="updateMiss(this.value)" />
+          <span class="miss-label" id="missLabel">想你了</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✏️ 今天想说…（可选）</div>
+        <input type="text" id="msgInput" placeholder="留一句话给TA…" maxlength="50" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:#fff8fb;color:var(--text);outline:none;" />
+      </div>
+
+      <div class="checkin-btns">
+        <button class="btn-checkin btn-night" onclick="doCheckin('晚安🌙')">🌙 晚安打卡</button>
+        <button class="btn-checkin btn-morning" onclick="doCheckin('早安☀️')" style="border:1.5px solid var(--pink-deep);">☀️ 早安打卡</button>
+      </div>
+    </div>
+
+    <!-- 记录 -->
+    <div class="panel" id="panel-history">
+      <div id="historyList"></div>
+    </div>
+
+    <!-- 纪念日 -->
+    <div class="panel" id="panel-anniv">
+      <div id="annivList"></div>
+
+      <div class="card">
+        <div class="card-title">➕ 添加纪念日</div>
+        <div class="add-form">
+          <input type="text" id="annivName" placeholder="名称，如：在一起的日子 💑" maxlength="20" />
+          <input type="date" id="annivDate" />
+          <button class="btn-add" onclick="addAnniv()">添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── 状态 ──
+  let me = null, code = null, mood = '😊', miss = 3;
+
+  const missEmojis = ['','💛','🧡','❤️','💖','💗'];
+  const missLabels = ['','偶尔想起','有点想你','想你了','好想你啊','超级想你!!'];
+
+  // ── 存储 ──
+  function sKey(type) { return 'ca_' + code + '_' + type; }
+
+  async function sSet(type, val) {
+    try { await window.storage.set(sKey(type), JSON.stringify(val), true); } catch(e) {}
+  }
+  async function sGet(type) {
+    try { const r = await window.storage.get(sKey(type), true); return r ? JSON.parse(r.value) : null; }
+    catch(e) { return null; }
+  }
+
+  // ── 启动 ──
+  window.addEventListener('DOMContentLoaded', () => {
+    const sn = localStorage.getItem('ca_name'), sc = localStorage.getItem('ca_code');
+    if (sn && sc) { me = sn; code = sc; enterApp(); }
+    updateMiss(3);
+  });
+
+  function doSetup() {
+    const n = document.getElementById('nameInput').value.trim();
+    const c = document.getElementById('codeInput').value.trim();
+    if (!n) { toast('请填写你的昵称 💕'); return; }
+    if (!c) { toast('请填写情侣码 🔗'); return; }
+    me = n; code = c;
+    localStorage.setItem('ca_name', n);
+    localStorage.setItem('ca_code', c);
+    enterApp();
+  }
+
+  function enterApp() {
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'flex';
+    document.getElementById('headerUser').textContent = me;
+    document.getElementById('myStatusName').textContent = me;
+    refreshCheckin();
+    // 每30秒刷新一次，让对方数据实时出现
+    setInterval(refreshCheckin, 30000);
+  }
+
+  function doLogout() {
+    localStorage.removeItem('ca_name');
+    localStorage.removeItem('ca_code');
+    me = null; code = null;
+    document.getElementById('setupScreen').style.display = 'flex';
+    document.getElementById('appScreen').style.display = 'none';
+    switchTab('checkin');
+  }
+
+  // ── 心情 & 想念 ──
+  function pickMood(btn, m) {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    mood = m;
+  }
+
+  function updateMiss(v) {
+    miss = parseInt(v);
+    document.getElementById('missEmoji').textContent = missEmojis[miss];
+    document.getElementById('missLabel').textContent = missLabels[miss];
+    // update slider gradient
+    const pct = (miss - 1) / 4 * 100;
+    const sl = document.getElementById('missSlider');
+    sl.style.background = `linear-gradient(to right, var(--pink-deep) 0%, var(--pink-deep) ${pct}%, #e8d0d8 ${pct}%, #e8d0d8 100%)`;
+  }
+
+  // ── 打卡 ──
+  function todayStr() { return new Date().toLocaleDateString('zh-CN'); }
+  function timeStr() { return new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'}); }
+
+  async function doCheckin(type) {
+    const msg = document.getElementById('msgInput').value.trim();
+    const rec = { user: me, type, mood, miss, msg, time: timeStr(), date: todayStr(), ts: Date.now() };
+    const list = await sGet('checkins') || [];
+    list.unshift(rec);
+    if (list.length > 100) list.splice(100);
+    await sSet('checkins', list);
+    document.getElementById('msgInput').value = '';
+    toast(`${type} 打卡成功！对TA的想念已送达 💕`);
+    refreshCheckin();
+  }
+
+  async function refreshCheckin() {
+    const list = await sGet('checkins') || [];
+    const today = todayStr();
+    const todayList = list.filter(r => r.date === today);
+    const mine = todayList.find(r => r.user === me);
+    const partner = todayList.find(r => r.user !== me);
+
+    const myCard = document.getElementById('myStatus');
+    myCard.innerHTML = `<div class="sname">${me}</div><div class="semoji">${mine ? mine.mood : '🌙'}</div><div class="stime">${mine ? mine.type + ' ' + mine.time : '未打卡'}</div>`;
+    mine ? myCard.classList.add('done') : myCard.classList.remove('done');
+
+    const pCard = document.getElementById('partnerStatus');
+    pCard.innerHTML = `<div class="sname">${partner ? partner.user : 'TA'}</div><div class="semoji">${partner ? partner.mood : '🌙'}</div><div class="stime">${partner ? partner.type + ' ' + partner.time : '等待中…'}</div>`;
+    partner ? pCard.classList.add('done') : pCard.classList.remove('done');
+  }
+
+  // ── 记录 ──
+  async function loadHistory() {
+    const list = await sGet('checkins') || [];
+    const el = document.getElementById('historyList');
+    if (!list.length) { el.innerHTML = '<div class="empty-tip">还没有打卡记录<br>快去打第一个卡吧 💕</div>'; return; }
+    el.innerHTML = list.slice(0, 50).map(r => `
+      <div class="history-item">
+        <div class="history-emoji">${r.mood}</div>
+        <div class="history-info">
+          <div class="history-who">${r.user} · ${r.date} ${r.time}</div>
+          <div class="history-main">${r.type}${r.msg ? ' &nbsp;「' + r.msg + '」' : ''}</div>
+          <div class="history-miss">${missEmojis[r.miss]} ${missLabels[r.miss]}</div>
+        </div>
+        <span class="history-badge">${r.type.replace(/[^\u4e00-\u9fa5]/g,'')}</span>
+      </div>`).join('');
+  }
+
+  // ── 纪念日 ──
+  async function addAnniv() {
+    const name = document.getElementById('annivName').value.trim();
+    const date = document.getElementById('annivDate').value;
+    if (!name) { toast('请填写纪念日名称 🌸'); return; }
+    if (!date) { toast('请选择日期 🗓️'); return; }
+    const list = await sGet('annivs') || [];
+    list.push({ name, date, id: Date.now() });
+    list.sort((a,b) => a.date.localeCompare(b.date));
+    await sSet('annivs', list);
+    document.getElementById('annivName').value = '';
+    document.getElementById('annivDate').value = '';
+    toast('纪念日已添加 🌸');
+    loadAnnivs();
+  }
+
+  async function delAnniv(id) {
+    let list = await sGet('annivs') || [];
+    list = list.filter(a => a.id !== id);
+    await sSet('annivs', list);
+    toast('已删除');
+    loadAnnivs();
+  }
+
+  async function loadAnnivs() {
+    const list = await sGet('annivs') || [];
+    const el = document.getElementById('annivList');
+    if (!list.length) { el.innerHTML = '<div class="empty-tip">还没有纪念日<br>把你们在一起的日子加进来吧 💑</div>'; return; }
+    const today = new Date(); today.setHours(0,0,0,0);
+    el.innerHTML = list.map(a => {
+      const d = new Date(a.date + 'T00:00:00');
+      const diff = Math.round((d - today) / 86400000);
+      let countHtml;
+      if (diff === 0) {
+        countHtml = `<div class="anniv-today">🎉</div><div class="anniv-unit">就是今天！</div>`;
+      } else if (diff > 0) {
+        countHtml = `<div class="anniv-days">${diff}</div><div class="anniv-unit">天后</div>`;
+      } else {
+        const abs = Math.abs(diff);
+        const yrs = Math.floor(abs / 365);
+        countHtml = yrs >= 1
+          ? `<div class="anniv-days">${yrs}<span style="font-size:14px;">年</span>${abs - yrs*365}<span style="font-size:13px;">天</span></div><div class="anniv-unit">在一起了</div>`
+          : `<div class="anniv-days">${abs}</div><div class="anniv-unit">天已过去</div>`;
+      }
+      return `<div class="anniv-card-item">
+        <div class="anniv-left">
+          <div class="alabel">${a.name}</div>
+          <div class="adate">${a.date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div class="anniv-right">${countHtml}</div>
+          <button class="btn-del" onclick="delAnniv(${a.id})">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── 标签页切换 ──
+  function switchTab(name) {
+    ['checkin','history','anniv'].forEach(t => {
+      document.getElementById('tab-'+t).classList.toggle('active', t===name);
+      document.getElementById('panel-'+t).classList.toggle('active', t===name);
+    });
+    if (name === 'history') loadHistory();
+    if (name === 'anniv') loadAnnivs();
+    if (name === 'checkin') refreshCheckin();
+  }
+
+  // ── Toast ──
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
