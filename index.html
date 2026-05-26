@@ -442,19 +442,68 @@
 <script>
   // ── 状态 ──
   let me = null, code = null, mood = '😊', miss = 3;
+  let gistId = null;
 
   const missEmojis = ['','💛','🧡','❤️','💖','💗'];
   const missLabels = ['','偶尔想起','有点想你','想你了','好想你啊','超级想你!!'];
 
-  // ── 存储 ──
-  function sKey(type) { return 'ca_' + code + '_' + type; }
+  // ── GitHub Gist 存储（两人同步）──
+  const GITHUB_TOKEN = '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';
+  const HEADERS = {
+    'Authorization': 'token ' + GITHUB_TOKEN,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github.v3+json'
+  };
 
-  async function sSet(type, val) {
-    try { await window.storage.set(sKey(type), JSON.stringify(val), true); } catch(e) {}
+  // 找到或创建属于这对情侣的 Gist
+  async function getOrCreateGist() {
+    if (gistId) return gistId;
+    const saved = localStorage.getItem('ca_gist_' + code);
+    if (saved) { gistId = saved; return gistId; }
+
+    // 搜索已有 Gist
+    const res = await fetch('https://api.github.com/gists', { headers: HEADERS });
+    const list = await res.json();
+    const desc = 'couple-app-' + code;
+    const found = list.find(g => g.description === desc);
+    if (found) {
+      gistId = found.id;
+      localStorage.setItem('ca_gist_' + code, gistId);
+      return gistId;
+    }
+
+    // 创建新 Gist
+    const create = await fetch('https://api.github.com/gists', {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({
+        description: desc,
+        public: false,
+        files: { 'data.json': { content: JSON.stringify({ checkins: [], annivs: [] }) } }
+      })
+    });
+    const g = await create.json();
+    gistId = g.id;
+    localStorage.setItem('ca_gist_' + code, gistId);
+    return gistId;
   }
-  async function sGet(type) {
-    try { const r = await window.storage.get(sKey(type), true); return r ? JSON.parse(r.value) : null; }
-    catch(e) { return null; }
+
+  async function readData() {
+    try {
+      const id = await getOrCreateGist();
+      const res = await fetch('https://api.github.com/gists/' + id, { headers: HEADERS });
+      const g = await res.json();
+      return JSON.parse(g.files['data.json'].content);
+    } catch(e) { return { checkins: [], annivs: [] }; }
+  }
+
+  async function writeData(data) {
+    try {
+      const id = await getOrCreateGist();
+      await fetch('https://api.github.com/gists/' + id, {
+        method: 'PATCH', headers: HEADERS,
+        body: JSON.stringify({ files: { 'data.json': { content: JSON.stringify(data) } } })
+      });
+    } catch(e) {}
   }
 
   // ── 启动 ──
@@ -517,18 +566,20 @@
 
   async function doCheckin(type) {
     const msg = document.getElementById('msgInput').value.trim();
+    toast('正在保存… 💕');
     const rec = { user: me, type, mood, miss, msg, time: timeStr(), date: todayStr(), ts: Date.now() };
-    const list = await sGet('checkins') || [];
-    list.unshift(rec);
-    if (list.length > 100) list.splice(100);
-    await sSet('checkins', list);
+    const data = await readData();
+    data.checkins.unshift(rec);
+    if (data.checkins.length > 100) data.checkins.splice(100);
+    await writeData(data);
     document.getElementById('msgInput').value = '';
     toast(`${type} 打卡成功！对TA的想念已送达 💕`);
     refreshCheckin();
   }
 
   async function refreshCheckin() {
-    const list = await sGet('checkins') || [];
+    const data = await readData();
+    const list = data.checkins || [];
     const today = todayStr();
     const todayList = list.filter(r => r.date === today);
     const mine = todayList.find(r => r.user === me);
@@ -545,7 +596,8 @@
 
   // ── 记录 ──
   async function loadHistory() {
-    const list = await sGet('checkins') || [];
+    const data = await readData();
+    const list = data.checkins || [];
     const el = document.getElementById('historyList');
     if (!list.length) { el.innerHTML = '<div class="empty-tip">还没有打卡记录<br>快去打第一个卡吧 💕</div>'; return; }
     el.innerHTML = list.slice(0, 50).map(r => `
@@ -566,10 +618,12 @@
     const date = document.getElementById('annivDate').value;
     if (!name) { toast('请填写纪念日名称 🌸'); return; }
     if (!date) { toast('请选择日期 🗓️'); return; }
-    const list = await sGet('annivs') || [];
-    list.push({ name, date, id: Date.now() });
-    list.sort((a,b) => a.date.localeCompare(b.date));
-    await sSet('annivs', list);
+    toast('正在保存… 🌸');
+    const data = await readData();
+    data.annivs = data.annivs || [];
+    data.annivs.push({ name, date, id: Date.now() });
+    data.annivs.sort((a,b) => a.date.localeCompare(b.date));
+    await writeData(data);
     document.getElementById('annivName').value = '';
     document.getElementById('annivDate').value = '';
     toast('纪念日已添加 🌸');
@@ -577,15 +631,16 @@
   }
 
   async function delAnniv(id) {
-    let list = await sGet('annivs') || [];
-    list = list.filter(a => a.id !== id);
-    await sSet('annivs', list);
+    const data = await readData();
+    data.annivs = (data.annivs || []).filter(a => a.id !== id);
+    await writeData(data);
     toast('已删除');
     loadAnnivs();
   }
 
   async function loadAnnivs() {
-    const list = await sGet('annivs') || [];
+    const data = await readData();
+    const list = data.annivs || [];
     const el = document.getElementById('annivList');
     if (!list.length) { el.innerHTML = '<div class="empty-tip">还没有纪念日<br>把你们在一起的日子加进来吧 💑</div>'; return; }
     const today = new Date(); today.setHours(0,0,0,0);
